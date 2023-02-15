@@ -99,7 +99,7 @@ def decrypt(encrypted_text, key):
 
 
 if __name__ == "__main__":
-    file_examaple = 'input.png' #Дефолт значение
+    file_examaple = 'input1.png' #Дефолт значение
     crypt_key = 'secr_123t'
     try:
         op_mode = sys.argv[1]
