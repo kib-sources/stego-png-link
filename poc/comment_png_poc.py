@@ -1,19 +1,23 @@
-import sys
-
 """
-...
+Proof Of Consept для записи и чтения зашифрованного сообщения посредством записи в метаданных PNG файла.
+
+Программа использует метод XOR-шифрования для защиты текста. Для шифрования текста необходимо ввести ключ, который используется вместе с оператором XOR для преобразования символов текста в зашифрованные символы. Расшифровка текста осуществляется также с помощью ключа и оператора XOR.
+После шифрования текста, программа создает новый PNG файл, добавляет в его метаданные комментарий с зашифрованным текстом и записывает этот файл на диск. Зашифрованный текст можно потом извлечь из метаданных PNG файла и расшифровать обратно.
+Программа реализована на языке Python и не использует сторонних библиотек для работы с PNG файлами. Пользовательский интерфейс программы реализован через командную строку.
+Пример работы смотреть в poc\README.md
 Create at 13.02.2023 00:00:00
 ~/poc/comment_png_poc.py
 """
 
-__authors__ = [
-    'tunderof'
-]
+import sys
+
+__author__ = 'tunderof'
 __copyright__ = 'KIB, 2023'
-__license__ = 'LGPL'
 __credits__ = [
     'tunderof'
 ]
+
+__license__ = 'LGPL'
 __version__ = "20230213"
 __status__ = "Production"
 
@@ -24,13 +28,14 @@ def write(message, output_file):
 
     # Разделение файла на чанки
     chunks = []
-    chunk_start = 8
+    chunk_start = 8 # Пропуск 8 байт данных, для игнорирования сигнатуры PNG файла
     while chunk_start < len(original_image):
         chunk_length = int.from_bytes(original_image[chunk_start:chunk_start+4], "big")
         chunk_type = original_image[chunk_start+4:chunk_start+8].decode()
         chunk_data = original_image[chunk_start+8:chunk_start+8+chunk_length]
         chunk_crc = original_image[chunk_start+8+chunk_length:chunk_start+12+chunk_length]
         chunks.append((chunk_type, chunk_data, chunk_crc))
+        # 12 -- это число, которое отвечает за пропуск 4 байт длины чанка, 4 байт названия чанка, 4 байт значения CRC алгоритма
         chunk_start += 12 + chunk_length
 
     # Генерация Comment чанка
@@ -39,7 +44,8 @@ def write(message, output_file):
     chunks = [("IHDR", chunks[0][1], chunks[0][2])] + [comment_chunk] + chunks[1:]
 
     # Генерация нового изображения
-    new_image = b"\x89PNG\r\n\x1a\n"
+    png_signature = b"\x89PNG\r\n\x1a\n"
+    new_image = png_signature # Создание переменной для хранения данных генерируемого изображения
     for chunk_type, chunk_data, chunk_crc in chunks:
         chunk = (len(chunk_data)).to_bytes(4, "big") + chunk_type.encode() + chunk_data + chunk_crc
         new_image += chunk
@@ -50,6 +56,8 @@ def write(message, output_file):
 
 
 def generate_comment_chunk(comment):
+    #tEXt -- Чанк для хранения текстовых строк.
+    #https://www.w3.org/TR/2003/REC-PNG-20031110/#11tEXt
     chunk_type = "tEXt"
     chunk_data = f"Comment\0{comment}".encode()
     chunk_crc = 0
@@ -92,7 +100,7 @@ def decrypt(encrypted_text, key):
 
 if __name__ == "__main__":
     file_examaple = 'input.png' #Дефолт значение
-    crypt_key = 'secr_12et'
+    crypt_key = 'secr_123t'
     try:
         op_mode = sys.argv[1]
         if op_mode == '--em':
